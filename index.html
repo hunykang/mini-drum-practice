@@ -184,6 +184,61 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .help { font-size: 12px; color: var(--muted); margin: 0; line-height: 1.7; }
 .help kbd { font-family: var(--font-display); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; color: var(--fg); }
 
+/* ---------- 엑셀 스킨: 스프레드시트 화면 위에 게임을 반투명하게 겹침 ---------- */
+:root.skin-excel {
+  color-scheme: light;
+  --bg: #ffffff; --panel: transparent; --panel-2: rgba(0, 0, 0, .03); --line: #d0d4d9;
+  --fg: #1f1f1f; --muted: #6b6b6b; --accent: #217346;
+  --xl-top: 136px; --xl-left: 40px; --xl-bottom: 28px; --xl-col: 72px; --xl-row: 20px;
+  --xl-grid: #e1e3e6; --xl-head: #f3f3f3; --xl-head-line: #c8cacd; --xl-ink: #444;
+}
+.skin-excel body {
+  padding-top: calc(var(--xl-top) + 10px);
+  padding-bottom: calc(var(--xl-bottom) + 16px);
+  padding-left: max(calc(var(--xl-left) + 12px), env(safe-area-inset-left, 0px));
+}
+.skin-excel .wrap { position: relative; z-index: 1; opacity: var(--skin-op, .45); filter: saturate(.55); }
+.xl { position: fixed; inset: 0; pointer-events: none; font-family: "Segoe UI", "Malgun Gothic", var(--font-body); color: var(--xl-ink); font-size: 12px; }
+.xl-grid {
+  position: absolute; top: var(--xl-top); left: var(--xl-left); right: 0; bottom: var(--xl-bottom); z-index: 0;
+  background:
+    repeating-linear-gradient(to right, var(--xl-grid) 0 1px, transparent 1px var(--xl-col)),
+    repeating-linear-gradient(to bottom, var(--xl-grid) 0 1px, transparent 1px var(--xl-row));
+}
+.xl-sel { position: absolute; z-index: 1; top: calc(var(--xl-top) + 2 * var(--xl-row)); left: calc(var(--xl-left) + var(--xl-col)); width: var(--xl-col); height: var(--xl-row); border: 2px solid var(--accent); box-sizing: border-box; }
+.xl-top { position: absolute; top: 0; left: 0; right: 0; z-index: 2; background: #fff; border-bottom: 1px solid var(--xl-head-line); }
+.xl-title { height: 28px; display: flex; align-items: center; justify-content: center; background: var(--accent); color: #fff; font-size: 12px; }
+.xl-tabs { height: 26px; display: flex; align-items: flex-end; gap: 2px; padding: 0 8px; background: var(--accent); overflow: hidden; white-space: nowrap; }
+.xl-tabs span { padding: 4px 12px; color: #e6f2ea; }
+.xl-tabs span.on { background: #fff; color: var(--accent); border-radius: 3px 3px 0 0; font-weight: 600; }
+.xl-ribbon { height: 36px; display: flex; align-items: center; gap: 4px; padding: 0 8px; background: #f8f8f8; border-bottom: 1px solid #e3e3e3; overflow: hidden; white-space: nowrap; }
+.xl-ribbon span { padding: 3px 10px; border-right: 1px solid #ddd; color: #555; }
+.xl-ribbon i { display: inline-block; width: 18px; height: 14px; margin-right: 3px; vertical-align: -2px; background: #dcdcdc; border-radius: 2px; }
+.xl-fx { height: 26px; display: flex; align-items: center; border-bottom: 1px solid #e3e3e3; }
+.xl-name { width: 80px; padding: 0 6px; border-right: 1px solid #ddd; height: 100%; display: flex; align-items: center; }
+.xl-fxi { padding: 0 10px; font-style: italic; color: #888; border-right: 1px solid #ddd; height: 100%; display: flex; align-items: center; }
+#xlFormula { padding: 0 8px; white-space: nowrap; overflow: hidden; }
+.xl-cols { height: var(--xl-row); display: flex; padding-left: var(--xl-left); background: var(--xl-head); overflow: hidden; }
+.xl-cols span { flex: 0 0 var(--xl-col); box-sizing: border-box; border-right: 1px solid var(--xl-head-line); text-align: center; line-height: var(--xl-row); }
+.xl-cols span.on, .xl-rows span.on { background: #d3e7da; color: var(--accent); font-weight: 600; }
+.xl-rows { position: absolute; z-index: 2; top: var(--xl-top); left: 0; bottom: var(--xl-bottom); width: var(--xl-left); background: var(--xl-head); border-right: 1px solid var(--xl-head-line); overflow: hidden; }
+.xl-rows span { display: block; height: var(--xl-row); box-sizing: border-box; border-bottom: 1px solid var(--xl-head-line); text-align: center; line-height: var(--xl-row); font-variant-numeric: tabular-nums; }
+.xl-bottom {
+  position: absolute; z-index: 2; left: 0; right: 0; bottom: 0; height: var(--xl-bottom);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  display: flex; align-items: stretch; background: #f3f3f3; border-top: 1px solid var(--xl-head-line);
+}
+.xl-sheet { padding: 0 16px; display: flex; align-items: center; border-right: 1px solid #ddd; }
+.xl-sheet.on { background: #fff; color: var(--accent); font-weight: 600; border-bottom: 2px solid var(--accent); }
+.xl-plus { padding: 0 12px; display: flex; align-items: center; color: #777; }
+.xl-status { margin-left: auto; padding: 0 14px; display: flex; align-items: center; gap: 18px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 560px) {
+  :root.skin-excel { --xl-top: 100px; --xl-left: 28px; --xl-col: 56px; }
+  .xl-ribbon { display: none; }
+  .xl-status .wide { display: none; }
+}
+
 @media (max-width: 560px) {
   .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lv .meta { display: none; }
@@ -198,6 +253,23 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
   .pad { transition: none; }
 }
 </style>
+
+<div class="xl" id="xl" aria-hidden="true" hidden>
+  <div class="xl-top">
+    <div class="xl-title">통합 문서1.xlsx · 저장됨</div>
+    <div class="xl-tabs"><span>파일</span><span class="on">홈</span><span>삽입</span><span>페이지 레이아웃</span><span>수식</span><span>데이터</span><span>검토</span><span>보기</span></div>
+    <div class="xl-ribbon"><span><i></i>붙여넣기</span><span><i></i>맑은 고딕 · 11</span><span><i></i>맞춤</span><span><i></i>일반</span><span><i></i>조건부 서식</span><span><i></i>셀 스타일</span><span><i></i>삽입 · 삭제</span><span><i></i>정렬 및 필터</span></div>
+    <div class="xl-fx"><span class="xl-name">B3</span><span class="xl-fxi">fx</span><span id="xlFormula">=SUMIFS(D:D,B:B,"완료")</span></div>
+    <div class="xl-cols" id="xlCols"></div>
+  </div>
+  <div class="xl-rows" id="xlRows"></div>
+  <div class="xl-grid"></div>
+  <div class="xl-sel"></div>
+  <div class="xl-bottom">
+    <span class="xl-sheet on">Sheet1</span><span class="xl-sheet">Sheet2</span><span class="xl-plus">+</span>
+    <span class="xl-status" id="xlStatus"></span>
+  </div>
+</div>
 
 <div class="wrap">
   <header>
@@ -251,6 +323,8 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
     <label class="ctl" for="offset">판정 보정 <input id="offset" type="range" min="-120" max="120" step="5" value="0"> <output id="offsetOut">0ms</output></label>
     <label class="ctl" for="metro"><input id="metro" type="checkbox" checked> 메트로놈</label>
     <label class="ctl" for="demo"><input id="demo" type="checkbox"> 데모(자동 연주)</label>
+    <label class="ctl" for="skinOn"><input id="skinOn" type="checkbox"> 엑셀 스킨</label>
+    <label class="ctl" for="skinOp">스킨 투명도 <input id="skinOp" type="range" min="15" max="90" step="5" value="45"> <output id="skinOpOut">45%</output></label>
     <button class="btn" id="calibBtn" type="button">탭 보정</button>
     <button class="btn" id="midiBtn" type="button">MIDI 연결</button>
     <div class="midi"><span id="midiStatus">전자드럼을 USB로 연결한 뒤 누르세요</span><span id="midiLast"></span></div>
@@ -260,6 +334,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
     키보드: <kbd>Space</kbd> 킥 · <kbd>F</kbd> 스네어 · <kbd>J</kbd> 하이햇 · <kbd>K</kbd> 탐 · <kbd>U</kbd> 크래시 · <kbd>Enter</kbd> 시작 · <kbd>Esc</kbd> 정지<br>
     판정: PERFECT ±40ms · GREAT ±80ms · GOOD ±130ms. 탭 보정을 누르고 클릭 소리에 맞춰 12번 치면 기기 지연을 자동으로 맞춥니다.<br>
     MIDI: GM 드럼 노트를 자동 인식합니다(킥 35·36, 스네어 37·38·40, 하이햇 42·46, 탐 41~50, 크래시·라이드 49·51·55·57). Chrome·Edge에서 동작합니다. 10콤보마다 점수 배율이 올라갑니다(최대 x4).<br>
+    엑셀 스킨: <kbd>`</kbd>(숫자 1 왼쪽 키)로 바로 켜고 끕니다. 화면을 스프레드시트처럼 바꾸고 게임은 셀 위에 반투명하게 보입니다. 브라우저 전체 화면(F11)과 함께 쓰면 자연스럽습니다.<br>
     해금: 지금은 테스트 모드라 모든 레벨이 열려 있습니다. 출시 버전에서는 100% 이상 속도에서 정확도 80% 이상이면 다음 레벨이 열립니다. 기록은 이 브라우저에만 저장됩니다.
   </p>
 </div>
@@ -524,10 +599,17 @@ function updateHud() {
   $('mult').textContent = 'x' + mult();
   const a = accuracy(run);
   $('acc').textContent = a == null ? '–' : a.toFixed(1) + '%';
+  setXlStatus(a, run.combo, run.score);
+}
+// 엑셀 상태 표시줄: 평균 = 정확도, 개수 = 콤보, 합계 = 점수
+function setXlStatus(acc, combo, score) {
+  $('xlStatus').innerHTML = `<span>준비</span><span class="wide">평균: ${acc == null ? 0 : acc.toFixed(1)}</span>` +
+    `<span class="wide">개수: ${combo}</span><span>합계: ${score.toLocaleString()}</span><span class="wide">100%</span>`;
 }
 function resetHud() {
   $('score').textContent = '0'; $('combo').textContent = '0'; $('mult').textContent = 'x1';
   $('acc').textContent = '–'; $('judge').textContent = ''; $('judge').className = 'judge';
+  setXlStatus(null, 0, 0);
 }
 function showJudge(r, diff) {
   const el = $('judge');
@@ -735,7 +817,12 @@ function resize() {
 new ResizeObserver(resize).observe(cv);
 resize();
 
-const C = { panel: tok('panel'), panel2: tok('panel-2'), fg: tok('fg'), muted: tok('muted'), accent: tok('accent'), bg: tok('bg') };
+// 캔버스 색. 스킨을 바꾸면 refreshColors()로 다시 읽음
+const C = {};
+function refreshColors() {
+  Object.assign(C, { panel: tok('panel'), panel2: tok('panel-2'), fg: tok('fg'), muted: tok('muted'), accent: tok('accent'), bg: tok('bg') });
+}
+refreshColors();
 function rgba(hex, a) {
   const h = hex.replace('#', ''), n = parseInt(h.length === 3 ? h.replace(/./g, '$&$&') : h, 16);
   return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
@@ -748,6 +835,7 @@ function draw(pos, L, spb, notes) {
   const ppb = Math.max(70, Math.min(130, W / 7)), pps = ppb / spb;
   const xOf = t => hitX + (t - pos) * pps;
 
+  g.clearRect(0, 0, W, H); // 스킨 모드에서는 panel이 투명이라 먼저 지워야 잔상이 안 남음
   g.fillStyle = C.panel; g.fillRect(0, 0, W, H);
   LANES.forEach((l, i) => {
     const used = L.lanes.includes(l.id), y = i * laneH;
@@ -818,10 +906,38 @@ function draw(pos, L, spb, notes) {
   }
 }
 
+// ---------- 엑셀 스킨 ----------
+const SKIN_KEY = 'grooveLane.skin', SKIN_OP_KEY = 'grooveLane.skinOpacity';
+const colName = i => (i >= 26 ? String.fromCharCode(64 + Math.floor(i / 26)) : '') + String.fromCharCode(65 + (i % 26));
+$('xlCols').innerHTML = Array.from({ length: 40 }, (_, i) => `<span${i === 1 ? ' class="on"' : ''}>${colName(i)}</span>`).join('');
+$('xlRows').innerHTML = Array.from({ length: 80 }, (_, i) => `<span${i === 2 ? ' class="on"' : ''}>${i + 1}</span>`).join('');
+const skinOnEl = $('skinOn'), skinOpEl = $('skinOp');
+function applySkin(on) {
+  document.documentElement.classList.toggle('skin-excel', on);
+  $('xl').hidden = !on;
+  skinOnEl.checked = on;
+  refreshColors();
+  try { localStorage.setItem(SKIN_KEY, on ? '1' : '0'); } catch {}
+}
+function applySkinOpacity(pct) {
+  skinOpEl.value = pct;
+  $('skinOpOut').textContent = pct + '%';
+  document.documentElement.style.setProperty('--skin-op', pct / 100);
+  try { localStorage.setItem(SKIN_OP_KEY, String(pct)); } catch {}
+}
+skinOnEl.addEventListener('change', () => applySkin(skinOnEl.checked));
+skinOpEl.addEventListener('input', () => applySkinOpacity(+skinOpEl.value));
+try {
+  const op = localStorage.getItem(SKIN_OP_KEY);
+  applySkinOpacity(op !== null ? +op : 45);
+  if (localStorage.getItem(SKIN_KEY) === '1') applySkin(true);
+} catch { applySkinOpacity(45); }
+
 // ---------- 키보드 ----------
 const byCode = Object.fromEntries(LANES.map(l => [l.code, l.id]));
 addEventListener('keydown', e => {
   if (e.target.matches && e.target.matches('input[type="range"]') && e.code.startsWith('Arrow')) return;
+  if (e.code === 'Backquote' && !e.repeat) { e.preventDefault(); applySkin(!skinOnEl.checked); return; }
   const lane = byCode[e.code];
   if (lane) { e.preventDefault(); if (!e.repeat) hit(lane, audioTimeOf(e.timeStamp)); return; }
   if (e.code === 'Escape' && (state === 'calib' || cal)) { closeCalib(); return; }
