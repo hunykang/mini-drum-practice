@@ -85,7 +85,22 @@ h1 span { color: var(--accent); }
 @keyframes pop { from { transform: scale(1.25); } to { transform: scale(1); } }
 
 .stage { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
-#lane { display: block; width: 100%; height: clamp(220px, 34vw, 300px); touch-action: none; }
+#lane { display: block; width: 100%; height: clamp(220px, 34vw, 300px); touch-action: none; } /* 실제 높이는 레인 높이 슬라이더가 덮어씀 */
+
+.keys { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+.keys-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.keys-head .note { font-size: 12px; color: var(--muted); }
+.keys-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.keybtn {
+  --c: var(--fg); font: inherit; color: var(--fg); cursor: pointer;
+  background: var(--panel-2); border: 1.5px solid var(--c); border-radius: 10px;
+  padding: 8px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0;
+}
+.keybtn kbd { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--c); white-space: nowrap; }
+.keybtn.wait { background: color-mix(in srgb, var(--c) 25%, var(--panel)); }
+.keybtn.wait kbd { font-size: 12px; }
+.keys-foot { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+#keyMsg { font-size: 12px; color: var(--muted); margin-right: auto; }
 
 .result {
   position: absolute; inset: 0; background: color-mix(in srgb, var(--bg) 88%, transparent);
@@ -242,6 +257,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 
 @media (max-width: 560px) {
   .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .keys-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .lv .meta { display: none; }
   .judge { margin-left: 0; text-align: left; }
   .kit { aspect-ratio: 5 / 4; }
@@ -324,6 +340,8 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
     <label class="ctl" for="offset">판정 보정 <input id="offset" type="range" min="-120" max="120" step="5" value="0"> <output id="offsetOut">0ms</output></label>
     <label class="ctl" for="metro"><input id="metro" type="checkbox" checked> 메트로놈</label>
     <label class="ctl" for="demo"><input id="demo" type="checkbox"> 데모(자동 연주)</label>
+    <label class="ctl" for="laneH">레인 높이 <input id="laneH" type="range" min="100" max="320" step="10" value="240"> <output id="laneHOut">240px</output></label>
+    <button class="btn" id="keysBtn" type="button">키 설정</button>
     <label class="ctl" for="skinOn"><input id="skinOn" type="checkbox"> 엑셀 스킨</label>
     <label class="ctl" for="skinOp">스킨 투명도 <input id="skinOp" type="range" min="15" max="90" step="5" value="45"> <output id="skinOpOut">45%</output></label>
     <button class="btn" id="calibBtn" type="button">탭 보정</button>
@@ -331,8 +349,18 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
     <div class="midi"><span id="midiStatus">전자드럼을 USB로 연결한 뒤 누르세요</span><span id="midiLast"></span></div>
   </div>
 
+  <div class="keys" id="keysPanel" hidden>
+    <div class="keys-head"><b>키보드 설정</b><span class="note">바꿀 드럼을 누른 뒤 원하는 키를 누르세요. 이미 쓰는 키를 고르면 서로 맞바꿉니다. Esc는 취소.</span></div>
+    <div class="keys-row" id="keysRow"></div>
+    <div class="keys-foot">
+      <span id="keyMsg"></span>
+      <button class="btn" id="keysReset" type="button">기본값(D F Space J K)</button>
+      <button class="btn" id="keysClose" type="button">닫기</button>
+    </div>
+  </div>
+
   <p class="help">
-    키보드: <kbd>Space</kbd> 킥 · <kbd>F</kbd> 스네어 · <kbd>J</kbd> 하이햇 · <kbd>K</kbd> 탐 · <kbd>U</kbd> 크래시 · <kbd>Enter</kbd> 시작 · <kbd>Esc</kbd> 정지<br>
+    키보드: <span id="keyHelp"></span> · <kbd>Enter</kbd> 시작 · <kbd>Esc</kbd> 정지<br>
     판정: PERFECT ±40ms · GREAT ±80ms · GOOD ±130ms. 탭 보정을 누르고 클릭 소리에 맞춰 12번 치면 기기 지연을 자동으로 맞춥니다.<br>
     MIDI: GM 드럼 노트를 자동 인식합니다(킥 35·36, 스네어 37·38·40, 하이햇 42·46, 탐 41~50, 크래시·라이드 49·51·55·57). Chrome·Edge에서 동작합니다. 10콤보마다 점수 배율이 올라갑니다(최대 x4).<br>
     엑셀 스킨: <kbd>`</kbd>(숫자 1 왼쪽 키)로 바로 켜고 끕니다. 화면을 스프레드시트처럼 바꾸고 게임은 셀 위에 반투명하게 보입니다. 브라우저 전체 화면(F11)과 함께 쓰면 자연스럽습니다.<br>
@@ -341,13 +369,16 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 </div>
 
 <script>
+// 레인 순서(위→아래) = 드럼 키트의 왼쪽→오른쪽 순서. 키보드 기본값도 같은 순서(D F Space J K)
 const LANES = [
-  { id: 'crash', name: '크래시', key: 'U', code: 'KeyU' },
-  { id: 'hihat', name: '하이햇', key: 'J', code: 'KeyJ' },
-  { id: 'tom',   name: '탐',     key: 'K', code: 'KeyK' },
-  { id: 'snare', name: '스네어', key: 'F', code: 'KeyF' },
-  { id: 'kick',  name: '킥',     key: 'Space', code: 'Space' },
+  { id: 'hihat', name: '하이햇' },
+  { id: 'snare', name: '스네어' },
+  { id: 'kick',  name: '킥' },
+  { id: 'tom',   name: '탐' },
+  { id: 'crash', name: '크래시' },
 ];
+const DEFAULT_KEYS = { hihat: 'KeyD', snare: 'KeyF', kick: 'Space', tom: 'KeyJ', crash: 'KeyK' };
+const RESERVED_KEYS = new Set(['Escape', 'Enter', 'Backquote', 'Tab']); // 정지·시작·스킨·포커스 이동용
 const PAD_ORDER = ['kick', 'tom', 'snare', 'hihat', 'crash']; // 뒤에 올수록 위에 겹쳐 그려짐
 // 키트 배치: 중심 x·y(%)와 지름 d(키트 너비 대비 %). m*는 휴대폰 세로 화면용
 const KIT = {
@@ -361,7 +392,8 @@ const CYMBALS = new Set(['hihat', 'crash']);
 const css = getComputedStyle(document.documentElement);
 const tok = n => css.getPropertyValue('--' + n).trim();
 LANES.forEach(l => { l.color = tok(l.id); });
-const laneById = Object.fromEntries(LANES.map((l, i) => [l.id, { ...l, i }]));
+LANES.forEach((l, i) => { l.i = i; });
+const laneById = Object.fromEntries(LANES.map(l => [l.id, l])); // 같은 객체를 가리켜야 키 변경이 바로 반영됨
 
 // 채보: 박(beat) 단위로 저장하고 시작할 때 BPM·속도로 초 단위 변환
 function pattern(bars, barFn) {
@@ -558,6 +590,8 @@ function start() {
   speedEl.disabled = true; demoEl.disabled = true;
   $('startBtn').textContent = '정지';
   resetHud(); renderLevels();
+  // 좁은 화면에서는 점수·레인·드럼이 한 화면에 들어오도록 레벨 카드 아래로 스크롤
+  if (innerWidth < 900) document.querySelector('.hud').scrollIntoView({ block: 'start' });
 }
 function stop() {
   state = 'idle'; run = null;
@@ -950,9 +984,88 @@ try {
   if (localStorage.getItem(SKIN_KEY) === '1') applySkin(true);
 } catch { applySkinOpacity(45); }
 
+// ---------- 레인 높이 ----------
+const LANE_H_KEY = 'grooveLane.laneH';
+const laneHEl = $('laneH');
+function applyLaneH(px, save) {
+  laneHEl.value = px;
+  $('laneHOut').textContent = px + 'px';
+  cv.style.height = px + 'px'; // ResizeObserver가 캔버스 해상도를 다시 맞춤
+  if (save) try { localStorage.setItem(LANE_H_KEY, String(px)); } catch {}
+}
+laneHEl.addEventListener('input', () => applyLaneH(+laneHEl.value, true));
+{
+  let px = null;
+  try { const v = localStorage.getItem(LANE_H_KEY); if (v !== null) px = +v; } catch {}
+  applyLaneH(px ?? (innerWidth < 560 ? 150 : 260), false); // 휴대폰은 낮게 시작해 드럼까지 한 화면에
+}
+
+// ---------- 키보드 설정 ----------
+const KEYS_KEY = 'grooveLane.keys';
+const KEY_NAMES = {
+  Space: 'Space', Semicolon: ';', Comma: ',', Period: '.', Slash: '/', Quote: "'", Backslash: '\\',
+  BracketLeft: '[', BracketRight: ']', Minus: '-', Equal: '=',
+  ShiftLeft: 'L-Shift', ShiftRight: 'R-Shift', ControlLeft: 'L-Ctrl', ControlRight: 'R-Ctrl', AltLeft: 'L-Alt', AltRight: 'R-Alt',
+  ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', CapsLock: 'Caps',
+};
+function keyLabel(code) {
+  if (!code) return '?';
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  if (code.startsWith('Numpad')) return 'Num ' + code.slice(6);
+  return KEY_NAMES[code] || code;
+}
+let byCode = {}, capturing = null;
+function currentKeys() { return Object.fromEntries(LANES.map(l => [l.id, l.code])); }
+function applyKeys(map, save) {
+  LANES.forEach(l => { l.code = map[l.id] || DEFAULT_KEYS[l.id]; l.key = keyLabel(l.code); });
+  byCode = Object.fromEntries(LANES.map(l => [l.code, l.id]));
+  if (save) try { localStorage.setItem(KEYS_KEY, JSON.stringify(currentKeys())); } catch {}
+  renderPads(); renderKeys();
+}
+function renderKeys() {
+  $('keyHelp').innerHTML = LANES.map(l => `<kbd>${l.key}</kbd> ${l.name}`).join(' · ');
+  $('keysRow').innerHTML = LANES.map(l => `<button class="keybtn${capturing === l.id ? ' wait' : ''}" type="button" id="key-${l.id}" data-lane="${l.id}" style="--c:var(--${l.id})">
+    <span>${l.name}</span><kbd>${capturing === l.id ? '키를 누르세요' : l.key}</kbd></button>`).join('');
+}
+$('keysRow').addEventListener('click', e => {
+  const b = e.target.closest('.keybtn'); if (!b) return;
+  capturing = b.dataset.lane; $('keyMsg').textContent = ''; renderKeys();
+});
+$('keysBtn').addEventListener('click', () => {
+  if (state === 'playing') return;
+  const p = $('keysPanel'); p.hidden = !p.hidden; capturing = null; renderKeys();
+});
+$('keysClose').addEventListener('click', () => { $('keysPanel').hidden = true; capturing = null; renderKeys(); });
+$('keysReset').addEventListener('click', () => { capturing = null; applyKeys(DEFAULT_KEYS, true); $('keyMsg').textContent = '기본값으로 되돌렸습니다.'; });
+// 키 지정 중에 눌린 키 처리. 처리했으면 true
+function captureKey(e) {
+  if (!capturing) return false;
+  e.preventDefault();
+  const lane = laneById[capturing];
+  if (e.code === 'Escape') { capturing = null; $('keyMsg').textContent = '취소했습니다.'; renderKeys(); return true; }
+  if (RESERVED_KEYS.has(e.code)) { $('keyMsg').textContent = `${keyLabel(e.code)} 키는 시작·정지·스킨 전환에 쓰여서 지정할 수 없습니다.`; return true; }
+  const map = currentKeys();
+  const other = LANES.find(l => l.code === e.code && l.id !== capturing);
+  if (other) map[other.id] = map[capturing]; // 겹치면 맞바꿈
+  map[capturing] = e.code;
+  capturing = null;
+  applyKeys(map, true);
+  $('keyMsg').textContent = other
+    ? `${lane.name} ↔ ${other.name} 키를 맞바꿔 저장했습니다.`
+    : `${lane.name} → ${keyLabel(e.code)} 저장했습니다.`;
+  return true;
+}
+{
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(KEYS_KEY)); } catch {}
+  LANES.forEach(l => { l.code = (saved && saved[l.id]) || DEFAULT_KEYS[l.id]; l.key = keyLabel(l.code); });
+  byCode = Object.fromEntries(LANES.map(l => [l.code, l.id]));
+}
+
 // ---------- 키보드 ----------
-const byCode = Object.fromEntries(LANES.map(l => [l.code, l.id]));
 addEventListener('keydown', e => {
+  if (captureKey(e)) return;
   if (e.target.matches && e.target.matches('input[type="range"]') && e.code.startsWith('Arrow')) return;
   if (e.code === 'Backquote' && !e.repeat) { e.preventDefault(); applySkin(!skinOnEl.checked); return; }
   const lane = byCode[e.code];
@@ -964,7 +1077,7 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => { if (e.code === 'Space') e.preventDefault(); });
 
 sel = TEST_MODE ? 0 : LEVELS.reduce((m, _, i) => (isUnlocked(i) ? i : m), 0); // 열린 레벨 중 가장 높은 레벨부터
-renderLevels(); renderPads(); resetHud();
+renderLevels(); renderPads(); renderKeys(); resetHud();
 requestAnimationFrame(tick);
 </script>
 
