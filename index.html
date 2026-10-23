@@ -87,8 +87,10 @@ h1 span { color: var(--accent); }
 .stage { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--panel); }
 #lane { display: block; width: 100%; height: clamp(220px, 34vw, 300px); touch-action: none; } /* 실제 높이는 레인 높이 슬라이더가 덮어씀 */
 
-/* 세로 모드: 레인 5열이 너무 넓어지지 않게 가운데 정렬 */
-.stage.vertical { width: 100%; max-width: 620px; margin-inline: auto; }
+/* 세로 모드: 레인 5열이 너무 넓어지지 않게 가운데 정렬하고, 드럼 키트도 같은 폭으로 맞춰 레인 바로 아래에 둠 */
+.stage.vertical, .kit.vertical { width: 100%; max-width: 620px; margin-inline: auto; }
+.kit.vertical { aspect-ratio: 5 / 3; }
+.kit.vertical .pad { left: var(--vx); top: var(--vy); width: var(--vd); } /* 휴대폰용 m* 배치보다 우선 */
 .ctl select {
   font: inherit; font-size: 13px; color: var(--fg); background: var(--panel-2);
   border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px;
@@ -391,11 +393,13 @@ const RESERVED_KEYS = new Set(['Escape', 'Enter', 'Backquote', 'Tab']); // 정�
 const PAD_ORDER = ['kick', 'tom', 'snare', 'hihat', 'crash']; // 뒤에 올수록 위에 겹쳐 그려짐
 // 키트 배치: 중심 x·y(%)와 지름 d(키트 너비 대비 %). m*는 휴대폰 세로 화면용
 const KIT = {
-  kick:  { x: 46, y: 60, d: 27, mx: 64, my: 70, md: 44 },
-  tom:   { x: 64, y: 26, d: 18, mx: 50, my: 28, md: 26 },
-  snare: { x: 20, y: 66, d: 20, mx: 22, my: 72, md: 34 },
-  hihat: { x: 10.5, y: 27, d: 19, mx: 20, my: 22, md: 32 },
-  crash: { x: 85, y: 40, d: 24, mx: 82, my: 22, md: 34 },
+  // v*: 세로 레인 모드용. 키트 폭 = 레인 폭이고, 각 드럼 중심 x가 자기 레인 열 가운데(10·30·50·70·90%)에 옴.
+  // 레퍼런스처럼 드럼을 크게 잡아 이웃과 살짝 겹치게 함(겹침 순서는 PAD_ORDER: 킥이 맨 아래)
+  kick:  { x: 46, y: 60, d: 27, mx: 64, my: 70, md: 44, vx: 50, vy: 62, vd: 32 },
+  tom:   { x: 64, y: 26, d: 18, mx: 50, my: 28, md: 26, vx: 70, vy: 30, vd: 25 },
+  snare: { x: 20, y: 66, d: 20, mx: 22, my: 72, md: 34, vx: 30, vy: 66, vd: 26 },
+  hihat: { x: 10.5, y: 27, d: 19, mx: 20, my: 22, md: 32, vx: 10, vy: 32, vd: 20 },
+  crash: { x: 85, y: 40, d: 24, mx: 82, my: 22, md: 34, vx: 90, vy: 38, vd: 20 },
 };
 const CYMBALS = new Set(['hihat', 'crash']);
 const css = getComputedStyle(document.documentElement);
@@ -548,7 +552,7 @@ function renderPads() {
   const L = LEVELS[sel];
   $('pads').innerHTML = PAD_ORDER.map(id => {
     const l = laneById[id], p = KIT[id];
-    const pos = `--x:${p.x}%;--y:${p.y}%;--d:${p.d}%;--mx:${p.mx}%;--my:${p.my}%;--md:${p.md}%`;
+    const pos = `--x:${p.x}%;--y:${p.y}%;--d:${p.d}%;--mx:${p.mx}%;--my:${p.my}%;--md:${p.md}%;--vx:${p.vx}%;--vy:${p.vy}%;--vd:${p.vd}%`;
     return `<button class="pad ${CYMBALS.has(id) ? 'cymbal' : 'drum'} ${id}${L.lanes.includes(id) ? '' : ' off'}" type="button" id="pad-${id}" data-lane="${id}" aria-label="${l.name} (${l.key})" style="--c:var(--${id});${pos}">
       <span class="tag">${l.name}<kbd>${l.key}</kbd></span></button>`;
   }).join('');
@@ -1096,6 +1100,7 @@ function applyOrient(o, save) {
   orient = o === 'h' ? 'h' : 'v';
   orientEl.value = orient;
   document.querySelector('.stage').classList.toggle('vertical', orient === 'v');
+  $('pads').classList.toggle('vertical', orient === 'v');
   applyLaneH(savedLaneH(orient) ?? LANE_H_DEFAULT[orient][innerWidth < 560 ? 0 : 1], false);
   if (save) try { localStorage.setItem(ORIENT_KEY, orient); } catch {}
 }
