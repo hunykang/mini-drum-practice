@@ -135,6 +135,11 @@ idle ──start()──▶ playing ──곡 끝(finish)──▶ done ──�
 ### 3.7 렌더링
 
 - **노트 레인:** `<canvas id="lane">` 하나에 매 프레임 다시 그립니다(`requestAnimationFrame`). `ResizeObserver`와 `devicePixelRatio`로 선명도를 맞춥니다.
+- **레인 방향 (`orient`):** `'v'` 세로(기본값, 위→아래)와 `'h'` 가로(오른쪽→왼쪽) 두 가지입니다. 컨트롤의 '레인 방향'에서 고르고 `grooveLane.orient`에 저장합니다.
+  - 세로는 `drawV()`, 가로는 `draw()`가 그립니다(`draw()` 맨 앞에서 세로면 `drawV()`로 넘김). **두 함수는 같은 요소(레인, 박자선, 판정선, 노트, 이펙트, 이름, 카운트인)를 축만 바꿔 그리므로, 한쪽을 고치면 다른 쪽도 같이 고치세요.**
+  - 세로 모드에서는 레인이 왼쪽→오른쪽 열이고 순서는 `LANES` 순서(= 드럼 키트 순서)입니다. 레인 이름은 아래 띠에 그리고, 열이 90px 이상 넓으면 키도 함께 표시합니다. `.stage.vertical`은 최대 폭 620px로 가운데 정렬합니다.
+  - 판정·타이밍 로직은 방향과 무관합니다. 방향은 그리기만 바꿉니다.
+- **레인 높이:** 방향별로 따로 저장합니다(`grooveLane.laneH.v`, `grooveLane.laneH.h`). 저장값이 없으면 `LANE_H_DEFAULT`를 씁니다. 세로는 휴대폰 260px·PC 400px, 가로는 휴대폰 150px·PC 260px입니다. 예전 키 `grooveLane.laneH`는 가로 값으로 읽어 옵니다.
   - 노트의 x좌표는 `hitX + (노트시각 - pos) × pps`입니다. `pps`(초당 픽셀)는 `ppb / spb`이고, `ppb`(박당 픽셀)는 화면 너비의 1/7(70~130px)입니다. 속도를 바꿔도 화면상 노트 간격은 같습니다.
   - 색은 CSS 변수(`--kick` 등)를 시작할 때 읽어서 씁니다.
 - **드럼 키트:** `#pads`(`.kit`) 안에 버튼 5개를 `position: absolute`로 배치합니다.
@@ -223,6 +228,7 @@ push하고 1~2분 뒤 GitHub Pages에 반영됩니다.
 - [ ] 모든 레벨(1, 2, 2.1~2.4, 3~6)이 시작되고, 카운트인 4박 → 노트 진행 → 결과 화면까지 끝난다.
 - [ ] 키보드(기본 D, F, Space, J, K), 마우스 클릭, 터치가 모두 소리를 내고 판정된다.
 - [ ] 키 설정에서 키를 바꾸면 패드 표시·도움말이 바뀌고, 이미 쓰는 키를 고르면 맞바꾸며, 새로고침해도 유지된다. '기본값'으로 되돌릴 수 있다.
+- [ ] 처음 열면 세로 모드다. 세로·가로를 바꿔도 노트·판정·이펙트·카운트인이 정상이고, 선택한 방향과 방향별 레인 높이가 새로고침 후에도 유지된다.
 - [ ] 레인 높이 슬라이더가 동작하고 저장된다. 휴대폰(375px)에서 시작하면 점수·레인·드럼이 한 화면에 들어온다.
 - [ ] 속도 50% / 150%에서 노트와 메트로놈이 맞는다.
 - [ ] 데모 모드는 전부 PERFECT이고, 기록이 저장되지 않는다.
@@ -272,7 +278,7 @@ sed -n '/^<script>$/,/^<\/script>$/p' index.html | sed '1d;$d' > /tmp/app.js && 
 ### 데이터와 배포
 
 14. `localStorage`는 사생활 보호 모드 등에서 예외가 날 수 있습니다. **읽기와 쓰기는 항상 try/catch로 감싸세요.**
-15. 저장 키(`grooveLane.best`, `grooveLane.offset`, `grooveLane.skin`, `grooveLane.skinOpacity`, `grooveLane.keys`(레인id → `KeyboardEvent.code`), `grooveLane.laneH`(px))와 값 형태를 바꾸면 기존 기록이 깨집니다. 바꿔야 한다면 옛 데이터를 새 형태로 옮기는 코드를 함께 넣으세요.
+15. 저장 키(`grooveLane.best`, `grooveLane.offset`, `grooveLane.skin`, `grooveLane.skinOpacity`, `grooveLane.keys`(레인id → `KeyboardEvent.code`), `grooveLane.orient`('v'/'h'), `grooveLane.laneH.v`·`grooveLane.laneH.h`(px), 예전 키 `grooveLane.laneH`)와 값 형태를 바꾸면 기존 기록이 깨집니다. 바꿔야 한다면 옛 데이터를 새 형태로 옮기는 코드를 함께 넣으세요.
 16. 기록은 브라우저마다 따로 저장됩니다. 기기 간 동기화나 랭킹이 필요하면 백엔드(Supabase, Firebase 등)가 필요합니다.
 17. 외부 라이브러리를 추가한다면 CDN 주소에 **정확한 버전을 고정**하세요(예: `@1.2.3`). 빌드 과정이 없는 구조이므로 한 파일 구조를 유지하는 것을 권장합니다.
 18. 기성곡 음원, 기존 게임의 채보·이름·그래픽은 저작권 문제로 쓰지 마세요. 패턴은 직접 만들고, 소리는 합성하거나 로열티프리 샘플을 쓰세요.
