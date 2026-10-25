@@ -11,7 +11,7 @@
 | 배포 주소 | https://hunykang.github.io/mini-drum-practice/ |
 | 저장소 | https://github.com/hunykang/mini-drum-practice (GitHub Pages, `main` 브랜치 최상위 폴더) |
 | 구성 | **`index.html` 한 파일**(HTML·CSS·JS 모두 포함). 빌드 도구, 프레임워크, npm 의존성 없음 |
-| 외부 리소스 | Google Fonts만 사용(Chakra Petch, Noto Sans KR). 오디오 샘플 파일 없음(Web Audio로 합성) |
+| 외부 리소스 | Google Fonts(Chakra Petch, Noto Sans KR), 방문 카운터 API(countapi.mileshilliard.com). 오디오 샘플 파일 없음(Web Audio로 합성) |
 | 입력 | 키보드, 터치·마우스(Pointer Events), Web MIDI 전자드럼 |
 | 저장 | 브라우저 `localStorage`만 사용. 서버, 로그인, DB 없음 |
 
@@ -163,6 +163,18 @@ idle ──start()──▶ playing ──곡 끝(finish)──▶ done ──�
 
 ---
 
+### 3.9 방문 카운터
+
+- 맨 아래 오른쪽에 "오늘 방문 N · 전체 방문 M"을 작고 흐리게(11px, 투명도 0.65) 표시합니다(`#visit-counter`, `.visits`).
+- 주인의 다른 정적 사이트(sap-config-compare)와 **같은 방식**입니다. 가입이 필요 없는 무료 API `https://countapi.mileshilliard.com/api/v1/{hit|get}/{키}`를 씁니다.
+  - 키: 전체 `mini-drum-practice-total`, 오늘 `mini-drum-practice-day-YYYY-MM-DD`(**한국 시간** 날짜).
+  - 집계: 브라우저 세션당 한 번만 `hit`하고(`sessionStorage['minidrum-counted']`), 그 뒤 새로고침은 `get`(읽기)만 합니다. 전체를 먼저, 오늘을 나중에 처리해서 중간에 끊겨도 전체 ≥ 오늘이 유지됩니다.
+  - **배포 주소(`hunykang.github.io`)에서만 집계**합니다. 로컬 서버나 아티팩트 미리보기에서는 `get`만 해서 테스트로 숫자가 부풀지 않습니다. 아티팩트에서는 외부 요청이 막혀 카운터가 숨겨집니다.
+  - 아직 한 번도 집계되지 않은 키는 `{"error":"Key not found"}`가 와서 0으로 표시됩니다. 요청이 실패하면 조용히 숨깁니다.
+- 한계: 무료 외부 서비스라 언제든 멈추거나 사라질 수 있습니다(멈추면 카운터만 숨겨지고 게임에는 영향 없음). 같은 사람이 다른 브라우저·시크릿 창으로 오면 따로 셉니다. 정확한 통계가 필요하면 분석 도구(GoatCounter 등)를 쓰세요.
+
+---
+
 ## 4. 자주 하는 작업
 
 ### 현재 레벨 순서 (배열 순서 = 난이도 순서 = 해금 순서)
@@ -289,6 +301,7 @@ push하고 1~2분 뒤 GitHub Pages에 반영됩니다.
 - [ ] 화면 너비 375px(휴대폰)에서 가로 스크롤이 없고, 드럼 5개가 겹치지 않으며 모두 원형이다.
 - [ ] (`TEST_MODE = false`일 때) 80% 미만이면 다음 레벨이 잠기고, 80% 이상이면 열린다.
 - [ ] (전자드럼이 있다면) MIDI 연결, 노트 번호 표시, 판정이 동작한다.
+- [ ] 맨 아래 방문 카운터가 작게 보인다(배포 사이트에서는 첫 방문 때 숫자가 1씩 오르고, 같은 세션에서 새로고침하면 그대로).
 - [ ] 엑셀 스킨을 켜고 끌 때(체크박스와 <kbd>`</kbd> 키) 격자가 보이고, 노트 레인에 잔상이 없으며, 상태 표시줄의 합계가 점수를 따라간다. 새로고침해도 스킨 상태가 유지된다.
 
 스크립트 문법만 빠르게 확인하려면:
@@ -332,6 +345,7 @@ sed -n '/^<script>$/,/^<\/script>$/p' index.html | sed '1d;$d' > /tmp/app.js && 
 14. `localStorage`는 사생활 보호 모드 등에서 예외가 날 수 있습니다. **읽기와 쓰기는 항상 try/catch로 감싸세요.**
 15. 저장 키(`grooveLane.best`, `grooveLane.offset`, `grooveLane.skin`, `grooveLane.skinOpacity`, `grooveLane.keys`(레인id → `KeyboardEvent.code`), `grooveLane.orient`('v'/'h'), `grooveLane.laneH.v`·`grooveLane.laneH.h`(px), 예전 키 `grooveLane.laneH`)와 값 형태를 바꾸면 기존 기록이 깨집니다. 바꿔야 한다면 옛 데이터를 새 형태로 옮기는 코드를 함께 넣으세요.
 16. 기록은 브라우저마다 따로 저장됩니다. 기기 간 동기화나 랭킹이 필요하면 백엔드(Supabase, Firebase 등)가 필요합니다.
+16-1. 방문 카운터의 키 이름(`mini-drum-practice-total`, `mini-drum-practice-day-…`)을 바꾸면 숫자가 0부터 다시 시작합니다. 배포 주소가 바뀌면 카운터 코드의 `hunykang.github.io` 조건도 함께 바꾸세요(안 바꾸면 집계가 멈추고 읽기만 함).
 17. 외부 라이브러리를 추가한다면 CDN 주소에 **정확한 버전을 고정**하세요(예: `@1.2.3`). 빌드 과정이 없는 구조이므로 한 파일 구조를 유지하는 것을 권장합니다.
 18. 기성곡 음원, 기존 게임의 채보·이름·그래픽은 저작권 문제로 쓰지 마세요. 패턴은 직접 만들고, 소리는 합성하거나 로열티프리 샘플을 쓰세요.
 

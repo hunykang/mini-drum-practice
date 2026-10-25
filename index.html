@@ -226,6 +226,9 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 .btn:focus-visible, .lv:focus-visible, .pad:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 #startBtn { min-width: 110px; }
 
+/* 방문 카운터: 맨 아래 작고 흐리게. 읽을 수는 있지만 눈에 띄지 않게 */
+.visits { font-size: 11px; color: var(--muted); opacity: .65; text-align: right; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.visits b { font-weight: 600; }
 .help { font-size: 12px; color: var(--muted); margin: 0; line-height: 1.7; }
 .help kbd { font-family: var(--font-display); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; color: var(--fg); }
 
@@ -398,6 +401,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
     엑셀 스킨: <kbd>`</kbd>(숫자 1 왼쪽 키)로 바로 켜고 끕니다. 화면을 스프레드시트처럼 바꾸고 게임은 셀 위에 반투명하게 보입니다. 브라우저 전체 화면(F11)과 함께 쓰면 자연스럽습니다.<br>
     해금: 지금은 테스트 모드라 모든 레벨이 열려 있습니다. 출시 버전에서는 100% 이상 속도에서 정확도 80% 이상이면 다음 레벨이 열립니다. 기록은 이 브라우저에만 저장됩니다.
   </p>
+  <footer class="visits" id="visit-counter" hidden></footer>
 </div>
 
 <script>
@@ -1431,6 +1435,25 @@ addEventListener('keydown', e => {
   if (e.code === 'Enter' && state !== 'playing' && !(e.target instanceof HTMLButtonElement)) { e.preventDefault(); start(); }
 });
 addEventListener('keyup', e => { if (e.code === 'Space') e.preventDefault(); });
+
+// ---------- 방문 카운터 (sap-config-compare와 같은 방식) ----------
+// countapi.mileshilliard.com(가입 불필요 무료 API). 세션당 1회 집계, 전체를 먼저·오늘(한국 시간)을 나중에 처리해
+// 중간에 끊겨도 전체 ≥ 오늘을 유지. 배포 사이트에서만 집계하고 로컬·미리보기에서는 읽기만. 실패하면 조용히 숨김
+(function visitCounter() {
+  const el = $('visit-counter');
+  const day = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const TOTAL = 'mini-drum-practice-total', DAY = 'mini-drum-practice-day-' + day, FLAG = 'minidrum-counted';
+  let counted = false;
+  try { counted = sessionStorage.getItem(FLAG) === '1'; } catch {}
+  const op = location.hostname === 'hunykang.github.io' && !counted ? 'hit' : 'get';
+  if (op === 'hit') try { sessionStorage.setItem(FLAG, '1'); } catch {}
+  const req = key => fetch(`https://countapi.mileshilliard.com/api/v1/${op}/${key}`, { keepalive: true }).then(r => r.json());
+  const fmt = n => Number(n || 0).toLocaleString('ko-KR'); // 아직 없는 키는 {error}로 와서 0으로 표시
+  req(TOTAL).then(t => req(DAY).then(d => [t, d])).then(([t, d]) => {
+    el.innerHTML = `오늘 방문 <b>${fmt(d.value)}</b> · 전체 방문 <b>${fmt(t.value)}</b>`;
+    el.hidden = false;
+  }).catch(() => {});
+})();
 
 // 처음 선택은 레벨 3(기본 8비트). 아직 잠겨 있으면 열린 레벨 중 가장 높은 레벨
 {
