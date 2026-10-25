@@ -52,7 +52,7 @@ h1 span { color: var(--accent); }
 
 /* 레벨 선택: 위 묶음 탭(LV 1~7) + 아래 선택한 묶음의 단계 카드 */
 .levels { display: flex; flex-direction: column; gap: 8px; }
-.lv-groups { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.lv-groups { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
 .lvg {
   font: inherit; color: var(--fg); cursor: pointer; text-align: left; min-width: 0;
   background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
@@ -321,7 +321,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 <div class="wrap">
   <header>
     <h1>mini-drum<span>_practice</span></h1>
-    <p class="sub">레벨 1~7과 단계별 연습 · 노트가 판정선에 닿을 때 드럼을 치세요</p>
+    <p class="sub">레벨 1~8과 단계별 연습 · 노트가 판정선에 닿을 때 드럼을 치세요</p>
   </header>
 
   <div class="levels" id="levels"></div>
@@ -454,6 +454,10 @@ function groove16(b, kicks, fillFrom = 4, fill = []) {
   return a.concat(fill);
 }
 const L6_KICKS = [[0, 2], [0, 2.75], [0, 1.75, 2], [0, 0.75, 2.5]]; // 6.x 16분음표 킥 변형(4마디 주기)
+const ALL_LANES = ['crash', 'hihat', 'tom', 'snare', 'kick'];
+const T3 = 1 / 3; // 셋잇단 한 칸
+// 마디 첫 박 하이햇을 크래시로 바꿈(필인 다음 마디를 크래시로 시작할 때)
+const crashOnOne = notes => notes.map(([t, l]) => (t === 0 && l === 'hihat' ? [0, 'crash'] : [t, l]));
 const LEVELS = [
   { lv: 1, name: '4분음표 킥', desc: '한 박에 한 번, 킥만 일정하게', bpm: 60, bars: 8, lanes: ['kick'],
     notes: pattern(8, () => [[0, 'kick'], [1, 'kick'], [2, 'kick'], [3, 'kick']]) },
@@ -613,6 +617,78 @@ const LEVELS = [
       // 앞 마디에서 당겨 쳤으니 이어지는 마디의 첫 박 크래시·킥은 비움
       return b > 0 && b % 4 === 0 ? a.filter(([t, l]) => !(t === 0 && (l === 'crash' || l === 'kick'))) : a;
     }) },
+  // 8 / 8.1~8.8: 연주곡 묶음. 모든 단계가 다섯 드럼을 전부 씀. 데모(자동 연주)로 먼저 들어 보면 좋음
+  { lv: 8, name: '록 종합 그루브', desc: '킥 변형 8비트 + 짝수 마디 필인(스네어→탐), 크래시로 마무리', bpm: 100, bars: 8, lanes: ALL_LANES,
+    notes: pattern(8, b => b % 2 === 0
+      ? crashOnOne(groove8(b, L4_KICKS[b % 4]))
+      : b % 4 === 3
+        ? groove8(b, L4_KICKS[b % 4], 2, [[2, 'snare'], [2.5, 'snare'], [3, 'tom'], [3.5, 'tom']])
+        : groove8(b, L4_KICKS[b % 4], 3, [[3, 'snare'], [3.5, 'tom']])) },
+  { lv: 8.1, name: '크래시 라이드 비트', desc: '크래시를 4분음표로 계속 치고 하이햇은 엇박, 4마디째 탐 필인', bpm: 105, bars: 8, lanes: ALL_LANES,
+    notes: pattern(8, b => {
+      if (b % 4 === 3) return [[0, 'crash'], [0, 'kick'], [0.5, 'hihat'], [1, 'crash'], [1, 'snare'], [1.5, 'kick'],
+        [2, 'tom'], [2.5, 'tom'], [3, 'snare'], [3.5, 'snare']];
+      const a = [];
+      for (let i = 0; i < 4; i++) a.push([i, 'crash'], [i + 0.5, 'hihat']); // 크래시는 박에, 하이햇은 '앤'에
+      a.push([0, 'kick'], [1.5, 'kick'], [2, 'kick'], [1, 'snare'], [3, 'snare']);
+      return a;
+    }) },
+  { lv: 8.2, name: '정글 탐 그루브', desc: '탐이 리듬을 끌고 가는 트라이벌 비트', bpm: 95, bars: 8, lanes: ALL_LANES,
+    notes: pattern(8, b => {
+      const a = [[0, 'kick'], [0.5, 'tom'], [0.75, 'tom'], [1, 'snare'], [1.5, 'tom'], [2, 'kick'], [2.5, 'tom'], [2.75, 'tom'],
+        [3, 'snare'], [3.5, 'tom'], [0, 'hihat'], [1, 'hihat'], [2, 'hihat'], [3, 'hihat']];
+      return b % 4 === 0 ? crashOnOne(a) : a;
+    }) },
+  { lv: 8.3, name: '펑크 16비트', desc: '하이햇 16분음표 사이사이 탐 악센트, 4마디째 16분 필인', bpm: 85, bars: 8, lanes: ALL_LANES,
+    notes: pattern(8, b => b % 4 === 3
+      ? groove16(b, [0, 0.75], 2, [[2, 'snare'], [2.25, 'snare'], [2.5, 'tom'], [2.75, 'tom'], [3, 'snare'], [3.25, 'tom'], [3.5, 'snare'], [3.75, 'tom']])
+      : groove16(b, [0, 0.75, 2.5]).map(([t, l]) => (l === 'hihat' && (t === 1.75 || t === 3.75) ? [t, 'tom'] : [t, l]))) },
+  { lv: 8.4, name: '셔플 록', desc: '셋잇단 하이햇 셔플 + 셋잇단 스네어·탐 필인', bpm: 100, bars: 8, lanes: ALL_LANES,
+    notes: pattern(8, b => {
+      if (b % 4 === 3) return [[0, 'kick'], [0, 'hihat'], [2 * T3, 'hihat'], [1, 'snare'], [1 + 2 * T3, 'hihat'],
+        [2, 'snare'], [2 + T3, 'snare'], [2 + 2 * T3, 'snare'], [3, 'tom'], [3 + T3, 'tom'], [3 + 2 * T3, 'tom']];
+      const a = [];
+      for (let i = 0; i < 4; i++) a.push([i, i === 0 && b % 4 === 0 ? 'crash' : 'hihat'], [i + 2 * T3, 'hihat']);
+      a.push([0, 'kick'], [2, 'kick'], [2 + 2 * T3, 'kick'], [1, 'snare'], [3, 'snare']);
+      return a;
+    }) },
+  { lv: 8.5, name: '킥 질주(메탈)', desc: '킥 8분음표로 달리고 하이햇 4분, 4마디째 탐·스네어 필인', bpm: 110, bars: 8, lanes: ALL_LANES,
+    notes: pattern(8, b => {
+      if (b % 4 === 3) return [[0, 'kick'], [0, 'crash'], [0.5, 'kick'], [1, 'kick'], [1, 'snare'], [1.5, 'kick'],
+        [2, 'tom'], [2.5, 'tom'], [3, 'snare'], [3.5, 'snare']];
+      const a = [];
+      for (let i = 0; i < 8; i++) a.push([i / 2, 'kick']);
+      for (let i = 0; i < 4; i++) a.push([i, i === 0 && b % 4 === 0 ? 'crash' : 'hihat']);
+      a.push([1, 'snare'], [3, 'snare']);
+      return a;
+    }) },
+  { lv: 8.6, name: '주고받기 필인', desc: '한 마디 비트, 한 마디 16분 필인을 번갈아. 필인 뒤엔 크래시', bpm: 95, bars: 8, lanes: ALL_LANES,
+    notes: pattern(8, b => b % 2 === 0
+      ? crashOnOne(groove8(b, [0, 2.5]))
+      : groove8(b, [0, 1.5], 2, [[2, 'snare'], [2.25, 'snare'], [2.5, 'tom'], [2.75, 'tom'], [3, 'snare'], [3.25, 'snare'], [3.5, 'tom'], [3.75, 'tom']])) },
+  { lv: 8.7, name: '크래시 악센트', desc: '1박·2박 "앤"·4박에 크래시+킥 악센트(3-3-2), 마지막은 탐으로 끝맺음', bpm: 105, bars: 8, lanes: ALL_LANES,
+    notes: pattern(8, b => {
+      if (b === 7) return [[0, 'crash'], [0, 'kick'], [1, 'tom'], [1.5, 'tom'], [2, 'snare'], [2.5, 'snare'], [3, 'crash'], [3, 'kick']];
+      const a = [[0, 'crash'], [0, 'kick'], [1.5, 'crash'], [1.5, 'kick'], [3, 'crash'], [3, 'kick'], [1, 'snare'], [3, 'snare']];
+      [0.5, 1, 2, 2.5, 3.5].forEach(t => a.push([t, b % 4 === 3 && t >= 2 && t < 3 ? 'tom' : 'hihat'])); // 4마디째는 탐으로 변화
+      return a;
+    }) },
+  { lv: 8.8, name: '피날레 드럼 솔로', desc: '8마디 동안 8비트→16비트→악센트→16분 솔로 롤→끝맺음까지', bpm: 100, bars: 8, lanes: ALL_LANES,
+    notes: pattern(8, b => [
+      () => groove8(b, [0, 2.5]),                                                                       // 1. 8비트로 출발(크래시)
+      () => groove8(b, [0, 1.5], 3, [[3, 'snare'], [3.25, 'snare'], [3.5, 'tom'], [3.75, 'tom']]),         // 2. 1박 16분 필인
+      () => crashOnOne(groove16(b, [0, 0.75, 2.5])),                                                    // 3. 16비트로 전환
+      () => groove16(b, [0, 0.75], 2, [[2, 'tom'], [2.25, 'tom'], [2.5, 'snare'], [2.75, 'snare'],
+        [3, 'tom'], [3.25, 'tom'], [3.5, 'snare'], [3.75, 'snare']]),                                   // 4. 2박 필인
+      () => [[0, 'crash'], [0, 'kick'], [0.5, 'hihat'], [1, 'snare'], [1.5, 'crash'], [1.5, 'kick'],
+        [2, 'hihat'], [2.5, 'snare'], [3, 'crash'], [3, 'kick'], [3.5, 'hihat']],                        // 5. 크래시 악센트
+      () => [[0, 'kick'], [0, 'snare'], [0.5, 'tom'], [1, 'snare'], [1.5, 'tom'], [2, 'kick'], [2, 'snare'],
+        [2.5, 'tom'], [3, 'snare'], [3.5, 'tom']],                                                      // 6. 스네어·탐 주고받기
+      () => [0, 1, 2, 3].flatMap(q => [0, 0.25, 0.5, 0.75].map(s => [q + s, q % 2 ? 'tom' : 'snare']))
+        .concat([[0, 'kick'], [1, 'kick'], [2, 'kick'], [3, 'kick']]),                                  // 7. 16분 솔로 롤
+      () => [[0, 'crash'], [0, 'kick'], [1, 'crash'], [1, 'kick'], [1.5, 'tom'], [2, 'snare'], [2.5, 'tom'],
+        [3, 'crash'], [3, 'kick']],                                                                     // 8. 끝맺음
+    ][b]()) },
 ];
 const WIN = { perfect: 0.04, great: 0.08, good: 0.13 };
 const PTS = { perfect: 300, great: 200, good: 100 };
