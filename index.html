@@ -50,8 +50,28 @@ h1 { font-family: var(--font-display); font-weight: 700; font-size: 28px; letter
 h1 span { color: var(--accent); }
 .sub { color: var(--muted); font-size: 13px; margin: 0; }
 
-.levels { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
-@media (max-width: 900px) { .levels { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* 레벨 선택: 위 묶음 탭(LV 1~7) + 아래 선택한 묶음의 단계 카드 */
+.levels { display: flex; flex-direction: column; gap: 8px; }
+.lv-groups { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.lvg {
+  font: inherit; color: var(--fg); cursor: pointer; text-align: left; min-width: 0;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 8px 10px; display: flex; flex-direction: column; gap: 1px;
+}
+.lvg:hover { border-color: var(--muted); }
+.lvg .tag { font-family: var(--font-display); font-weight: 700; font-size: 14px; letter-spacing: .06em; color: var(--accent); }
+.lvg .gname { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lvg .gdone { font-family: var(--font-display); font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.lvg[aria-selected="true"] { background: var(--accent); border-color: var(--accent); }
+.lvg[aria-selected="true"] .tag, .lvg[aria-selected="true"] .gname, .lvg[aria-selected="true"] .gdone { color: var(--bg); }
+.lvg:disabled { cursor: default; }
+.lvg.locked { opacity: .45; border-style: dashed; }
+.lvg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lv-subs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 900px) {
+  .lv-groups { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .lv-subs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .lv {
   text-align: left; font: inherit; color: var(--fg); cursor: pointer;
   background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
@@ -265,7 +285,8 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 }
 
 @media (max-width: 560px) {
-  .levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lv-subs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lvg { padding: 6px 8px; }
   .keys-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .lv .meta { display: none; }
   .judge { margin-left: 0; text-align: left; }
@@ -300,7 +321,7 @@ input[type="checkbox"] { accent-color: var(--accent); width: 16px; height: 16px;
 <div class="wrap">
   <header>
     <h1>mini-drum<span>_practice</span></h1>
-    <p class="sub">레벨 1~6과 단계별 연습(2.x~6.x) · 노트가 판정선에 닿을 때 드럼을 치세요</p>
+    <p class="sub">레벨 1~7과 단계별 연습 · 노트가 판정선에 닿을 때 드럼을 치세요</p>
   </header>
 
   <div class="levels" id="levels"></div>
@@ -570,6 +591,28 @@ const LEVELS = [
     notes: pattern(8, b => b % 4 === 3
       ? groove16(b, [0, 0.75], 2, [[2, 'snare'], [2.25, 'snare'], [2.5, 'tom'], [2.75, 'tom'], [3, 'snare'], [3.25, 'snare'], [3.5, 'tom'], [3.75, 'tom']])
       : groove16(b, L6_KICKS[b % 4])) },
+  // 7 / 7.x: 싱코페이션(엇박). 박과 박 사이 '앤'에 킥·스네어·크래시를 넣어 당겨지는 느낌을 익힘
+  { lv: 7, name: '싱코페이션 8비트', desc: '킥을 1박, 2박 "앤", 3박 "앤"에', bpm: 100, bars: 8, lanes: ['crash', 'hihat', 'snare', 'kick'],
+    notes: pattern(8, b => groove8(b, [0, 1.5, 2.5])) },
+  { lv: 7.1, name: '엇박 스네어', desc: '4박 "앤"에 스네어를 한 번 더', bpm: 100, bars: 8, lanes: ['crash', 'hihat', 'snare', 'kick'],
+    notes: pattern(8, b => groove8(b, [0, 2.5], 4, [[3.5, 'snare']])) },
+  { lv: 7.2, name: '하프타임', desc: '스네어는 3박에만, 킥은 1박·2박 "앤"·4박 "앤"', bpm: 90, bars: 8, lanes: ['crash', 'hihat', 'snare', 'kick'],
+    notes: pattern(8, b => {
+      const a = [];
+      for (let i = 0; i < 8; i++) a.push([i / 2, i === 0 && b % 4 === 0 ? 'crash' : 'hihat']);
+      a.push([0, 'kick'], [1.5, 'kick'], [3.5, 'kick'], [2, 'snare']);
+      return a;
+    }) },
+  { lv: 7.3, name: '디스코', desc: '킥은 매 박, 하이햇은 엇박("앤")에만, 2·4박 스네어', bpm: 105, bars: 8, lanes: ['crash', 'hihat', 'snare', 'kick'],
+    notes: pattern(8, b => [[0, 'kick'], [1, 'kick'], [2, 'kick'], [3, 'kick'], [1, 'snare'], [3, 'snare'],
+      [0.5, 'hihat'], [1.5, 'hihat'], [2.5, 'hihat'], [3.5, 'hihat']].concat(b % 4 === 0 ? [[0, 'crash']] : [])) },
+  { lv: 7.4, name: '앞당긴 크래시', desc: '4마디째 필인 끝 4박 "앤"에 크래시+킥을 미리 치고, 다음 마디 첫 박은 쉼', bpm: 105, bars: 8, lanes: ['crash', 'hihat', 'tom', 'snare', 'kick'],
+    notes: pattern(8, b => {
+      if (b % 4 === 3) return groove8(b, [0, 1.5], 2, [[2, 'snare'], [2.5, 'tom'], [3, 'tom'], [3.5, 'crash'], [3.5, 'kick']]);
+      const a = groove8(b, [0, 1.5, 2.5]);
+      // 앞 마디에서 당겨 쳤으니 이어지는 마디의 첫 박 크래시·킥은 비움
+      return b > 0 && b % 4 === 0 ? a.filter(([t, l]) => !(t === 0 && (l === 'crash' || l === 'kick'))) : a;
+    }) },
 ];
 const WIN = { perfect: 0.04, great: 0.08, good: 0.13 };
 const PTS = { perfect: 300, great: 200, good: 100 };
@@ -634,18 +677,38 @@ const speedEl = $('speed'), offsetEl = $('offset'), metroEl = $('metro'), demoEl
 let sel = 0, state = 'idle', run = null;
 const fx = [];
 
+// 레벨 선택은 2단: 위쪽 묶음 탭(LV 1~7, 소수점 앞 숫자) → 아래쪽에 그 묶음의 단계 카드만 표시
+const groupOf = L => Math.floor(L.lv);
+const GROUPS = [...new Set(LEVELS.map(groupOf))];
+const levelsIn = n => LEVELS.map((L, i) => i).filter(i => groupOf(LEVELS[i]) === n);
 function renderLevels() {
-  $('levels').innerHTML = LEVELS.map((L, i) => {
-    const b = best[L.lv], locked = !isUnlocked(i);
+  const g = groupOf(LEVELS[sel]), busy = state === 'playing';
+  const tabs = GROUPS.map(n => {
+    const idx = levelsIn(n), head = LEVELS[idx[0]], locked = !isUnlocked(idx[0]);
+    const done = idx.filter(i => isCleared(LEVELS[i].lv)).length;
+    const doneTxt = idx.length > 1 ? `${done}/${idx.length} 통과` : done ? '통과' : '1단계';
+    return `<button class="lvg${locked ? ' locked' : ''}" type="button" role="tab" id="lvg${n}" data-g="${n}" aria-selected="${n === g}" ${busy || locked ? 'disabled' : ''}>
+      <span class="tag">LV ${n}</span><span class="gname">${head.name}</span><span class="gdone">${doneTxt}</span></button>`;
+  }).join('');
+  const cards = levelsIn(g).map(i => {
+    const L = LEVELS[i], b = best[L.lv], locked = !isUnlocked(i);
     const bestTxt = locked ? `잠김 · LV ${LEVELS[i - 1].lv} 정확도 ${UNLOCK_ACC}% 필요`
       : b ? `최고 ${b.rank} · ${b.acc.toFixed(1)}% · ${b.score.toLocaleString()}점${isCleared(L.lv) ? ' · 통과' : ''}` : '기록 없음';
-    return `<button class="lv${locked ? ' locked' : ''}" type="button" id="lv${L.lv}" data-i="${i}" aria-pressed="${i === sel}" ${state === 'playing' || locked ? 'disabled' : ''}>
+    return `<button class="lv${locked ? ' locked' : ''}" type="button" id="lv${L.lv}" data-i="${i}" aria-pressed="${i === sel}" ${busy || locked ? 'disabled' : ''}>
       <span class="tag">LV ${L.lv}</span><span class="name">${L.name}</span>
       <span class="meta">${L.bpm} BPM · ${L.desc}</span><span class="best">${bestTxt}</span></button>`;
   }).join('');
+  $('levels').innerHTML = `<div class="lv-groups" role="tablist" aria-label="레벨">${tabs}</div><div class="lv-subs">${cards}</div>`;
 }
 $('levels').addEventListener('click', e => {
-  const b = e.target.closest('.lv'); if (!b || state === 'playing' || state === 'calib' || !isUnlocked(+b.dataset.i)) return;
+  if (state === 'playing' || state === 'calib') return;
+  const tab = e.target.closest('.lvg');
+  if (tab) { // 묶음 탭: 그 묶음의 첫 단계를 선택(이미 그 묶음이면 그대로)
+    const first = levelsIn(+tab.dataset.g)[0];
+    if (isUnlocked(first) && groupOf(LEVELS[sel]) !== +tab.dataset.g) selectLevel(first);
+    return;
+  }
+  const b = e.target.closest('.lv'); if (!b || !isUnlocked(+b.dataset.i)) return;
   selectLevel(+b.dataset.i);
 });
 function selectLevel(i) {
@@ -1293,7 +1356,11 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { if (e.code === 'Space') e.preventDefault(); });
 
-sel = TEST_MODE ? 0 : LEVELS.reduce((m, _, i) => (isUnlocked(i) ? i : m), 0); // 열린 레벨 중 가장 높은 레벨부터
+// 처음 선택은 레벨 3(기본 8비트). 아직 잠겨 있으면 열린 레벨 중 가장 높은 레벨
+{
+  const l3 = LEVELS.findIndex(L => L.lv === 3);
+  sel = isUnlocked(l3) ? l3 : LEVELS.reduce((m, _, i) => (isUnlocked(i) ? i : m), 0);
+}
 renderLevels(); renderPads(); renderKeys(); resetHud();
 requestAnimationFrame(tick);
 </script>
